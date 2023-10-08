@@ -14,7 +14,7 @@ api = Blueprint('api', __name__, template_folder='templates')
 
 with open('./config.yaml', 'r') as file:
     cfg = yaml.safe_load(file)
-openai.api_key = cfg["api_access"]
+openai.api_key = cfg["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"]
 
 description = ""
 
