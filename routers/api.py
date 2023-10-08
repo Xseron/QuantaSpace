@@ -35,6 +35,8 @@ def segment_text(text, max_length=500):
 
 
 def rank_segments(query, segments):
+    # print(1)
+    # print(query)
     query_words = set(query.lower().split())
     ranked_segments = sorted(segments, key=lambda seg: sum(word in seg.lower() for word in query_words), reverse=True)
     return ranked_segments
@@ -142,7 +144,7 @@ def chat2(question):
 
     messages = [
                 {"role": "system", "content": f"chat history: {chat_history2}, {description2}"},
-                {"role": "user", "content": f"Based on the text {pdftext}, can you answer in question based on this text:{question}"}
+                {"role": "user", "content": f"Based on the pdf: {pdftext},  answer this question based on pdf:{question}"}
                ]
     response = openai.ChatCompletion.create(model="gpt-3.5-turbo-16k", messages=messages, temperature=0.5, max_tokens = 500)
     chat_history2.append({"role": "assistant", "content": response['choices'][0]['message']['content']})
@@ -176,12 +178,9 @@ def write_chat_history2(history):
         json.dump(history, f)
 
 
-
-
-
-@api.route('/pdfupload', methods = ['POST'])   
+@api.route('/pdfupload', methods=['POST'])
 def success():
-    global question_for_analysis
+    question_for_analysis = 'summarize it'
     if 'file' not in request.files:
         return render_template("error.html", message="No file found.")
     
@@ -197,24 +196,28 @@ def success():
     f.save(secure_file_name)
     
     try:
-        global question_for_analysis
-        if question_for_analysis is None:
-           raise ValueError("Question for analysis is not set. Please ask a question first.")
-        total_words = count_words(secure_file_name)
-        amount_of_segments = total_words // 500
-        reader = extract_text_from_pdf(secure_file_name)
-        segments = segment_text(reader)
 
-        ranked_segments = rank_segments(question_for_analysis, segments) 
-        session['pdftext'] = ' '.join(ranked_segments[:amount_of_segments])
+        total_words = count_words(secure_file_name)
+        amount_of_segments = min(min(20, total_words // 500), 1)
+        reader = extract_text_from_pdf(secure_file_name)
+
+        segments = segment_text(reader)
+        # print(question_for_analysis)
+        # print(1)
+        
+
+        ranked_segments = rank_segments(question_for_analysis, segments)
+        print(2)
+        global pdftext 
+        print(3)
+        pdftext = ' '.join(ranked_segments[:amount_of_segments])
         print(f"Segments: {segments}")
         print(f"Question: {question_for_analysis}")
 
         
     except Exception as e:
-        print(f"An error occurred: {str(e)}")
+        print(e)
         return render_template("error.html", message=str(e))
-
     
     finally:
         os.remove(secure_file_name)
