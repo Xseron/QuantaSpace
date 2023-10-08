@@ -26,5 +26,5 @@ if __name__ == "__main__":
     app.register_blueprint(routers.page)
     app.register_blueprint(routers.api)
     # app.app_context().push()
-    # db.create_all()
-    app.run(debug=True)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug = True)
