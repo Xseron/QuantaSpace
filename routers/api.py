@@ -175,9 +175,13 @@ def write_chat_history2(history):
     with open('chat_history2.json', 'w') as f:
         json.dump(history, f)
 
+
+
+
+
 @api.route('/pdfupload', methods = ['POST'])   
-@api.route('/pdfupload', methods=['POST'])
 def success():
+    global question_for_analysis
     if 'file' not in request.files:
         return render_template("error.html", message="No file found.")
     
@@ -193,20 +197,24 @@ def success():
     f.save(secure_file_name)
     
     try:
+        global question_for_analysis
+        if question_for_analysis is None:
+           raise ValueError("Question for analysis is not set. Please ask a question first.")
         total_words = count_words(secure_file_name)
         amount_of_segments = total_words // 500
         reader = extract_text_from_pdf(secure_file_name)
         segments = segment_text(reader)
 
-        ranked_segments = rank_segments(question_for_analysis, segments)
-        global pdftext 
-        pdftext = ' '.join(ranked_segments[:amount_of_segments])
+        ranked_segments = rank_segments(question_for_analysis, segments) 
+        session['pdftext'] = ' '.join(ranked_segments[:amount_of_segments])
         print(f"Segments: {segments}")
         print(f"Question: {question_for_analysis}")
 
         
     except Exception as e:
+        print(f"An error occurred: {str(e)}")
         return render_template("error.html", message=str(e))
+
     
     finally:
         os.remove(secure_file_name)
