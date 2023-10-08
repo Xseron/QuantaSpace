@@ -254,8 +254,10 @@ def chat_route2():
         #app.logger.info(f"User question: {question}")  # Log user's question
         # print("Hell world!")
         answer = chat2(question)
+        recomendations = chat2("Can you give me some recomendations about this document? your answer must be less than 70 words")
+        category = chat2("Can you say in, 3 word, specific category of what this text about? for example maybe about maintenance, safety or design. Your answer must contain less than 5 words")
         #app.logger.info(f"Bot answer: {answer}")  # Log bot's answer
-        return jsonify({"answer": answer})
+        return jsonify({"answer": answer, "recomendations":recomendations, "category":category})
     else:
         return jsonify({"error": "Missing question parameter"}), 400
     

@@ -39,6 +39,8 @@ document.getElementById('chat-form').addEventListener('submit', function(event) 
   })
   .then(function(data) {
     document.getElementById('bot-response').textContent = data.answer;
+    document.getElementById('recomendations').textContent = data.recomendations;
+    document.getElementById('category').textContent = data.category;
 
     const synth = window.speechSynthesis;
     const utterance = new SpeechSynthesisUtterance(data.answer);
@@ -47,4 +49,29 @@ document.getElementById('chat-form').addEventListener('submit', function(event) 
   .catch(function(error) {
     console.error('Error:', error);
   });
+
+
+  // fetch('/chat2', {
+  //   method: 'POST',
+  //   headers: {
+  //     'Content-Type': 'application/json'
+  //   },
+  //   body: JSON.stringify({question: question})
+  // })
+  // .then(function(response) {
+  //   if (!response.ok) {
+  //     throw new Error('Response not OK');
+  //   }
+  //   return response.json();
+  // })
+  // .then(function(data) {
+  //   document.getElementById('bot-response').textContent = data.answer;
+
+  //   const synth = window.speechSynthesis;
+  //   const utterance = new SpeechSynthesisUtterance(data.answer);
+  //   synth.speak(utterance);
+  // })
+  // .catch(function(error) {
+  //   console.error('Error:', error);
+  // });
 });
