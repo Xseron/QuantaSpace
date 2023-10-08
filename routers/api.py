@@ -35,6 +35,8 @@ def segment_text(text, max_length=500):
 
 
 def rank_segments(query, segments):
+    # print(1)
+    # print(query)
     query_words = set(query.lower().split())
     ranked_segments = sorted(segments, key=lambda seg: sum(word in seg.lower() for word in query_words), reverse=True)
     return ranked_segments
@@ -178,6 +180,7 @@ def write_chat_history2(history):
 @api.route('/pdfupload', methods = ['POST'])   
 @api.route('/pdfupload', methods=['POST'])
 def success():
+    question_for_analysis = 'summorize it'
     if 'file' not in request.files:
         return render_template("error.html", message="No file found.")
     
@@ -193,19 +196,27 @@ def success():
     f.save(secure_file_name)
     
     try:
+
         total_words = count_words(secure_file_name)
         amount_of_segments = total_words // 500
         reader = extract_text_from_pdf(secure_file_name)
+
         segments = segment_text(reader)
+        # print(question_for_analysis)
+        # print(1)
+        
 
         ranked_segments = rank_segments(question_for_analysis, segments)
+        print(2)
         global pdftext 
+        print(3)
         pdftext = ' '.join(ranked_segments[:amount_of_segments])
         print(f"Segments: {segments}")
         print(f"Question: {question_for_analysis}")
 
         
     except Exception as e:
+        print(e)
         return render_template("error.html", message=str(e))
     
     finally:
