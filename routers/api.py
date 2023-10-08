@@ -8,6 +8,8 @@ from flask import (Blueprint, jsonify, redirect, render_template, request,
                    session, url_for)
 from gtts import gTTS
 
+from PyPDF2 import PdfReader
+
 from .parsersolid import get_beautifull
 
 api = Blueprint('api', __name__, template_folder='templates')
@@ -65,7 +67,7 @@ def plants():
                                                                 "moisture":moisture, "soil_type":soil_type, "crop_type":crop_type, "nitrogen":nitrogen,
                                                                 "potassium":potassium, "phosphorous": phosphorous})
         
-        return redirect(url_for('api.chat_r'))
+        # return redirect(url_for('api.chat_r'))
     
     return render_template("plants.html")
 
@@ -125,6 +127,27 @@ def chat(question):
     # page.logger.info(response['choices'][0]['message']['content'])
     return response['choices'][0]['message']['content']
 
+def chat2(question):
+    global pdftext
+    chat_history = []
+    print("chat 2 dfsfdsd")
+    # chat_history.append({"role": "user", "content": question})
+    
+    # {"role": "assistant", "content": f" {description}"}, 
+    # print("asdasdasdasdasd",description)
+    # pdftext = 'Space, the vast and mysterious expanse that stretches out infinitely beyond our planet, has captivated the human imagination for centuries. It is a realm of boundless possibilities, where the laws of physics play out on a scale that is almost incomprehensible. From the twinkling stars in the night sky to the distant galaxies that dot the cosmos, space is a canvas upon which the universe paints its masterpiece.'
+
+    messages = [
+                {"role": "system", "content": f"chat history: {chat_history}, {description}"},
+                {"role": "assistant", "content": f"Description of a team: {description}, chat history with you:{chat_history}"},
+                {"role": "user", "content": f"i get this text {pdftext}, can you answer in question based on this text:{question}"}
+               ]
+    response = openai.ChatCompletion.create(model="gpt-4", messages=messages, temperature=0.5, max_tokens = 150)
+    # chat_history.append({"role": "assistant", "content": response['choices'][0]['message']['content']})
+    # write_chat_history(chat_history)
+    # page.logger.info(response['choices'][0]['message']['content'])
+    return response['choices'][0]['message']['content']
+
 
 def read_chat_history():
     try:
@@ -137,6 +160,27 @@ def write_chat_history(history):
     with open('chat_history.json', 'w') as f:
         json.dump(history, f)
 
+@api.route('/pdfupload', methods = ['POST'])   
+def success():   
+    global pdftext
+    if request.method == 'POST':   
+        # messages = [
+        #         {"role": "system", "content": f"chat history: {chat_history}, {description}"},
+        #         {"role": "assistant", "content": f"Description of a team: {description}, chat history with you:{chat_history}"},
+        #         {"role": "user", "content": f"question: {question}"}
+        #        ]
+        # response = openai.ChatCompletion.create(model="gpt-4", messages=messages, temperature=0.5, max_tokens = 150)
+        f = request.files['file']
+        f.save(f.filename)
+        # pdftext = 'Space, the vast and mysterious expanse that stretches out infinitely beyond our planet, has captivated the human imagination for centuries. It is a realm of boundless possibilities, where the laws of physics play out on a scale that is almost incomprehensible. From the twinkling stars in the night sky to the distant galaxies that dot the cosmos, space is a canvas upon which the universe paints its masterpiece.'
+
+        reader = PdfReader(f"{f.filename}")
+        page = reader.pages[0]
+        print(page.extract_text())
+        pdftext = page.extract_text()
+        # print(" go to chat2")
+        # quessio = 
+        return render_template("chat2.html")
 
 
 @api.route('/chat', methods=['POST'])
@@ -145,6 +189,23 @@ def chat_route():
     if question:
         #app.logger.info(f"User question: {question}")  # Log user's question
         answer = chat(question)
+        #app.logger.info(f"Bot answer: {answer}")  # Log bot's answer
+        return jsonify({"answer": answer})
+    else:
+        return jsonify({"error": "Missing question parameter"}), 400
+    
+
+@api.route('/chat2', methods=['POST'])
+def chat_route2():
+    print("chat 2 here")
+    question = request.json.get('question')
+    # print(question)
+    
+    # pdfname = request.json.get('pdfname')
+    if question:
+        #app.logger.info(f"User question: {question}")  # Log user's question
+        # print("Hell world!")
+        answer = chat2(question)
         #app.logger.info(f"Bot answer: {answer}")  # Log bot's answer
         return jsonify({"answer": answer})
     else:

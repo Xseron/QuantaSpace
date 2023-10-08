@@ -3,6 +3,9 @@
 <head>
     <title>Fertilizer Prediction</title>
     <link rel="stylesheet" type="text/css" href="/templates/styles1.css">
+    <!-- <script src="jquery-2.1.4.js"></script> -->
+    <!-- <script src="jquery-2.1.4.js"></script>
+    <script src="jspdf.min.js"></script> -->
 </head>
 <body>
 <style> 
@@ -69,41 +72,15 @@
 
 <div class="container12">
     <h1>Fertilizer Prediction</h1>
-    <form action="/plants" method="post">
-        <div class="form-group">
-            <label for="temperature">Temperature:</label>
-            <input type="text" id="temperature" name="temperature">
-        </div>
-        <div class="form-group">
-            <label for="humidity">Humidity:</label>
-            <input type="text" id="humidity" name="humidity">
-        </div>
-        <div class="form-group">
-            <label for="moisture">Moisture:</label>
-            <input type="text" id="moisture" name="moisture">
-        </div>
-        <div class="form-group">
-            <label for="soil_type">Soil Type:</label>
-            <input type="text" id="soil_type" name="soil_type">
-        </div>
-        <div class="form-group">
-            <label for="crop_type">Crop Type:</label>
-            <input type="text" id="crop_type" name="crop_type">
-        </div>
-        <div class="form-group">
-            <label for="nitrogen">Nitrogen:</label>
-            <input type="text" id="nitrogen" name="nitrogen">
-        </div>
-        <div class="form-group">
-            <label for="potassium">Potassium:</label>
-            <input type="text" id="potassium" name="potassium">
-        </div>
-        <div class="form-group">
-            <label for="phosphorous">Phosphorous:</label>
-            <input type="text" id="phosphorous" name="phosphorous">
-        </div>
+    <!-- <form action="/plants" method="post">
+        <input type="file" id="file-id" name="file_name" onchange="ExtractText();">
+        <div id="output"></div>
         <input type="submit" value="Predict">
-    </form>
+    </form> -->
+    <form action = "/pdfupload" method = "post" enctype="multipart/form-data">   
+        <input type="file" name="file" id="file-id" />   
+        <input type = "submit" value="Upload">   
+    </form> 
 </div>
 </body>
 </html>
@@ -117,11 +94,47 @@
 <script src="{{ url_for('static', filename='jss/chat.js')}}"></script>
 
 <script>
-document.getElementById('chat-form').addEventListener('submit', function(event) {
-event.preventDefault(); 
-let question = document.getElementById('question').value;
+// document.getElementById('chat-form').addEventListener('submit', function(event) {
+// event.preventDefault(); 
+// let question = document.getElementById('question').value;
 
 
-});
+// })
+
+function ExtractText() {
+    var input = document.getElementById("file-id");
+    // var doc = new jsPDF(input.files[0]);            		
+    alert("1");
+                //var fReader = new FileReader();
+                //fReader.readAsDataURL(input.files[0]);
+                // console.log(input.files[0]);
+                //fReader.onloadend = function (event) {
+                    //convertDataURIToBinary(event.target.result);
+    // fetch('/chat', {
+    //     method: 'POST',
+    //     headers: {
+    //     'Content-Type': 'application/json'
+    //     },
+    //     body: JSON.stringify({question: `{{ quession }}`})
+    // })
+    // .then(function(response) {
+    //     if (!response.ok) {
+    //     throw new Error('Response not OK');
+    //     }
+    //     return response.json();
+    // })
+    // .then(function(data) {
+    //     document.getElementById('bot-response').textContent = data.answer;
+
+    //     const synth = window.speechSynthesis;
+    //     const utterance = new SpeechSynthesisUtterance(data.answer);
+    //     synth.speak(utterance);
+    // })
+    // .catch(function(error) {
+    //     console.error('Error:', error);
+    // });
+        
+        
+        };
 </script>
 {% endblock %}

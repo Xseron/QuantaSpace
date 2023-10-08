@@ -1,0 +1,60 @@
+{% extends 'base.html' %} 
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/form.css')}}">
+{% endblock %}
+
+{% block main %}
+<div class="wrap-contact100">
+  <form id="chat-form" class="contact100-form validate-form">
+    <span class="contact100-form-title"> Ask AI </span>
+    <div
+      class="wrap-input100 validate-input"
+      data-validate="Message is required"
+    >
+      <textarea
+        class="input100"
+        id = "question"
+        name="question"
+        placeholder="Generating..."
+      ></textarea>
+      <span class="focus-input100"></span>
+    </div>
+    <div class="container-contact100-form-btn">
+      <button type="submit" class="contact100-form-btn">Ask</button>
+      <button type="button" id="speak" class="contact100-form-btn">Speak</button>
+    </div>
+  </form>
+  <div id="bot-response"></div>
+</div>
+{% endblock %}
+
+{% block footer %}
+<script src="{{ url_for('static', filename='jss/chat2.js')}}"></script>
+
+<script>
+  console.log(`{{ quession }}`);
+  fetch('/chat2', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({question: `{{ quession }}`})
+  })
+  .then(function(response) {
+    if (!response.ok) {
+      throw new Error('Response not OK');
+    }
+    return response.json();
+  })
+  .then(function(data) {
+    document.getElementById('bot-response').textContent = data.answer;
+
+    const synth = window.speechSynthesis;
+    const utterance = new SpeechSynthesisUtterance(data.answer);
+    synth.speak(utterance);
+  })
+  .catch(function(error) {
+    console.error('Error:', error);
+  });
+</script>
+{% endblock %}
