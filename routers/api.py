@@ -2,15 +2,17 @@ import json
 
 import joblib
 import numpy as np
+import os
 import openai
 import yaml
 from flask import (Blueprint, jsonify, redirect, render_template, request,
                    session, url_for)
 from gtts import gTTS
-
+from werkzeug.utils import secure_filename
 from PyPDF2 import PdfReader
 
 from .parsersolid import get_beautifull
+import PyPDF2
 
 api = Blueprint('api', __name__, template_folder='templates')
 
@@ -19,67 +21,60 @@ api = Blueprint('api', __name__, template_folder='templates')
 # openai.api_key = cfg["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"]
 openai.api_key = "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"
 
-description = ""
+description1 = ""
+description2 = "You are an advanced AI bot that analyze the given pdf file, give recomendations, and answer each questions. Be very specific"
 
-chat_history = [
-    {"role": "system", "content": "refer to the previous dialogue if needed"},
-]
 
-@api.route('/map', methods=['GET', 'POST'])
-def map_source():
-    return render_template('map.html')
+def segment_text(text, max_length=500): 
+    segments = []
+    while text:
+        seg = text[:max_length].rsplit('.', 1)[0] + '.'  
+        segments.append(seg)
+        text = text[len(seg):]
+    return segments
 
-@api.route('/map_source')
-def map():
-    render_template("map.html")
 
-# Load the model, scaler, and label encoder
-model = joblib.load("./data/fertilizer_random_forest_model_updated.pkl")
-scaler = joblib.load("./data/scaler_updated.pkl")
-label_encoders = joblib.load("./data/label_encoders.pkl")
+def rank_segments(query, segments):
+    query_words = set(query.lower().split())
+    ranked_segments = sorted(segments, key=lambda seg: sum(word in seg.lower() for word in query_words), reverse=True)
+    return ranked_segments
 
-@api.route("/plants", methods=["GET", "POST"])
-def plants():
-    if request.method == "POST":
-        # Get data from form
-        temperature = float(request.form["temperature"])
-        humidity = float(request.form["humidity"])
-        moisture = float(request.form["moisture"])
-        soil_type = float(request.form["soil_type"])
-        crop_type = float(request.form["crop_type"])
-        nitrogen = float(request.form["nitrogen"])
-        potassium = float(request.form["potassium"])
-        phosphorous = float(request.form["phosphorous"])
 
-        # Create numpy array of input data and scale it
-        input_data = np.array([[temperature, humidity, moisture, soil_type, crop_type, nitrogen, potassium, phosphorous]])
-        input_data_scaled = scaler.transform(input_data)
+def extract_text_from_pdf(pdf_path):
+    """Extracts text from a given PDF file."""
+    with open(pdf_path, "rb") as file:
+ 
+        pdf_reader = PyPDF2.PdfReader(file)
         
-        # Make prediction
-        prediction_encoded = model.predict(input_data_scaled)[0]
-        
-        print("Label Encoder Keys:", label_encoders.keys())
-        print("Encoded Prediction:", prediction_encoded)
-        
-        prediction = label_encoders['Fertilizer Name'].inverse_transform([prediction_encoded])[0]
 
-        session['messages'] = json.dumps({"type":"1", "Fertilizer Name": prediction, "temp":temperature, "humidity":humidity,
-                                                                "moisture":moisture, "soil_type":soil_type, "crop_type":crop_type, "nitrogen":nitrogen,
-                                                                "potassium":potassium, "phosphorous": phosphorous})
-        
-        # return redirect(url_for('api.chat_r'))
+        text = ""
+        for page_num in range(len(pdf_reader.pages)):
+            page = pdf_reader.pages[page_num]
+            text += page.extract_text()
     
-    return render_template("plants.html")
+    return text
 
-# Load the model, scaler, and label encoder
-model_agro = joblib.load("./data/random_forest_model.pkl")
-scaler_agro = joblib.load("./data/scaler.pkl")
+
+def count_words(filename):
+    with open(filename, 'rb') as file:
+        pdf_reader = PyPDF2.PdfReader(file)
+        
+        total_words = 0
+        
+
+        for page_num in range(len(pdf_reader.pages)):
+            page = pdf_reader.pages[page_num]
+            text = page.extract_text()
+            total_words += len(text.split())
+            
+    return total_words
+
 
 @api.route("/agro", methods=["GET", "POST"])
 def agro():
     if request.method == "POST":
 
-        # Get data from form
+    
         size = str(request.form["N"])
         distance = str(request.form["P"])
         goal = str(request.form["K"])
@@ -108,6 +103,11 @@ chat_history = [
     {"role": "system", "content": "refer to the previous dialogue if needed"},
 ]
 
+
+chat_history2 = [
+    {"role": "system", "content": "refer to the previous dialogue if needed"},
+]
+
 def chat(question):
     # page.logger.info(f"Received question: {question}")
     chat_history = read_chat_history()
@@ -121,16 +121,19 @@ def chat(question):
                 {"role": "assistant", "content": f"Description of a team: {description}, chat history with you:{chat_history}"},
                 {"role": "user", "content": f"question: {question}"}
                ]
-    response = openai.ChatCompletion.create(model="gpt-4", messages=messages, temperature=0.5, max_tokens = 150)
+    response = openai.ChatCompletion.create(model="gpt-4", messages=messages, temperature=0.5, max_tokens = 500)
     chat_history.append({"role": "assistant", "content": response['choices'][0]['message']['content']})
     write_chat_history(chat_history)
     # page.logger.info(response['choices'][0]['message']['content'])
     return response['choices'][0]['message']['content']
 
+
+
 def chat2(question):
     global pdftext
-    chat_history = []
-    print("chat 2 dfsfdsd")
+    chat_history2 = read_chat_history2()
+    global question_for_analysis
+    question_for_analysis = question
     # chat_history.append({"role": "user", "content": question})
     
     # {"role": "assistant", "content": f" {description}"}, 
@@ -138,13 +141,12 @@ def chat2(question):
     # pdftext = 'Space, the vast and mysterious expanse that stretches out infinitely beyond our planet, has captivated the human imagination for centuries. It is a realm of boundless possibilities, where the laws of physics play out on a scale that is almost incomprehensible. From the twinkling stars in the night sky to the distant galaxies that dot the cosmos, space is a canvas upon which the universe paints its masterpiece.'
 
     messages = [
-                {"role": "system", "content": f"chat history: {chat_history}, {description}"},
-                {"role": "assistant", "content": f"Description of a team: {description}, chat history with you:{chat_history}"},
-                {"role": "user", "content": f"i get this text {pdftext}, can you answer in question based on this text:{question}"}
+                {"role": "system", "content": f"chat history: {chat_history2}, {description2}"},
+                {"role": "user", "content": f"Based on the text {pdftext}, can you answer in question based on this text:{question}"}
                ]
-    response = openai.ChatCompletion.create(model="gpt-4", messages=messages, temperature=0.5, max_tokens = 150)
-    # chat_history.append({"role": "assistant", "content": response['choices'][0]['message']['content']})
-    # write_chat_history(chat_history)
+    response = openai.ChatCompletion.create(model="gpt-3.5-turbo-16k", messages=messages, temperature=0.5, max_tokens = 500)
+    chat_history2.append({"role": "assistant", "content": response['choices'][0]['message']['content']})
+    write_chat_history2(chat_history2)
     # page.logger.info(response['choices'][0]['message']['content'])
     return response['choices'][0]['message']['content']
 
@@ -159,28 +161,65 @@ def read_chat_history():
 def write_chat_history(history):
     with open('chat_history.json', 'w') as f:
         json.dump(history, f)
+        
+        
+def read_chat_history2():
+    try:
+        with open('chat_history2.json', 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return []
+    
+
+def write_chat_history2(history):
+    with open('chat_history2.json', 'w') as f:
+        json.dump(history, f)
 
 @api.route('/pdfupload', methods = ['POST'])   
-def success():   
-    global pdftext
-    if request.method == 'POST':   
-        # messages = [
-        #         {"role": "system", "content": f"chat history: {chat_history}, {description}"},
-        #         {"role": "assistant", "content": f"Description of a team: {description}, chat history with you:{chat_history}"},
-        #         {"role": "user", "content": f"question: {question}"}
-        #        ]
-        # response = openai.ChatCompletion.create(model="gpt-4", messages=messages, temperature=0.5, max_tokens = 150)
-        f = request.files['file']
-        f.save(f.filename)
-        # pdftext = 'Space, the vast and mysterious expanse that stretches out infinitely beyond our planet, has captivated the human imagination for centuries. It is a realm of boundless possibilities, where the laws of physics play out on a scale that is almost incomprehensible. From the twinkling stars in the night sky to the distant galaxies that dot the cosmos, space is a canvas upon which the universe paints its masterpiece.'
+@api.route('/pdfupload', methods=['POST'])
+def success():
+    if 'file' not in request.files:
+        return render_template("error.html", message="No file found.")
+    
+    f = request.files['file']
+    
+    if f.filename == '':
+        return render_template("error.html", message="No file selected.")
+    
+    if not allowed_file(f.filename):
+        return render_template("error.html", message="Invalid file type.")
+    
+    secure_file_name = secure_filename(f.filename)
+    f.save(secure_file_name)
+    
+    try:
+        total_words = count_words(secure_file_name)
+        amount_of_segments = total_words // 500
+        reader = extract_text_from_pdf(secure_file_name)
+        segments = segment_text(reader)
 
-        reader = PdfReader(f"{f.filename}")
-        page = reader.pages[0]
-        print(page.extract_text())
-        pdftext = page.extract_text()
-        # print(" go to chat2")
-        # quessio = 
-        return render_template("chat2.html")
+        ranked_segments = rank_segments(question_for_analysis, segments)
+        global pdftext 
+        pdftext = ' '.join(ranked_segments[:amount_of_segments])
+        print(f"Segments: {segments}")
+        print(f"Question: {question_for_analysis}")
+
+        
+    except Exception as e:
+        return render_template("error.html", message=str(e))
+    
+    finally:
+        os.remove(secure_file_name)
+    
+    return render_template("chat2.html")
+
+ALLOWED_EXTENSIONS = {'pdf'}
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+    
 
 
 @api.route('/chat', methods=['POST'])
@@ -199,9 +238,7 @@ def chat_route():
 def chat_route2():
     print("chat 2 here")
     question = request.json.get('question')
-    # print(question)
     
-    # pdfname = request.json.get('pdfname')
     if question:
         #app.logger.info(f"User question: {question}")  # Log user's question
         # print("Hell world!")
