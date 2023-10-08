@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fertilizer Prediction</title>
+    <link rel="stylesheet" type="text/css" href="/templates/styles1.css">
+</head>
+<body>
+<style> 
+
+    body {
+        background-color: #f1f1f1;
+        font-family: Arial, sans-serif;
+    }
+    
+    .container12 {
+        background: white;
+        margin: 3em auto;
+        padding: 2em;
+        border-radius: 0.5em;
+        box-shadow: 0 0.25em 0.5em rgba(0,0,0,0.3);
+        max-width: 600px;
+    }
+    
+    h1 {
+        color: #228B22;  /* Green */
+    }
+    
+    .form-group {
+        margin-bottom: 1.5em;
+    }
+    
+    label {
+        display: block;
+        margin-bottom: 0.5em;
+        font-weight: bold;
+        color: #228B22;  /* Green */
+    }
+    
+    input[type="text"] {
+        width: 100%;
+        padding: 0.5em;
+        border: 1px solid #ccc;
+        border-radius: 0.25em;
+    }
+    
+    input[type="submit"] {
+        background-color: #228B22;  /* Green */
+        color: white;
+        padding: 1em;
+        border: none;
+        border-radius: 0.25em;
+        cursor: pointer;
+        font-size: 1em;
+    }
+    
+    input[type="submit"]:hover {
+        background-color: #1e7a1e;  /* Darker green */
+    }
+    
+</style>
+
+
+{% extends 'base.html' %} 
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/form.css')}}">
+{% endblock %}
+
+{% block main %}
+
+<div class="container12">
+    <h1>Fertilizer Prediction</h1>
+    <form action="/plants" method="post">
+        <div class="form-group">
+            <label for="temperature">Temperature:</label>
+            <input type="text" id="temperature" name="temperature">
+        </div>
+        <div class="form-group">
+            <label for="humidity">Humidity:</label>
+            <input type="text" id="humidity" name="humidity">
+        </div>
+        <div class="form-group">
+            <label for="moisture">Moisture:</label>
+            <input type="text" id="moisture" name="moisture">
+        </div>
+        <div class="form-group">
+            <label for="soil_type">Soil Type:</label>
+            <input type="text" id="soil_type" name="soil_type">
+        </div>
+        <div class="form-group">
+            <label for="crop_type">Crop Type:</label>
+            <input type="text" id="crop_type" name="crop_type">
+        </div>
+        <div class="form-group">
+            <label for="nitrogen">Nitrogen:</label>
+            <input type="text" id="nitrogen" name="nitrogen">
+        </div>
+        <div class="form-group">
+            <label for="potassium">Potassium:</label>
+            <input type="text" id="potassium" name="potassium">
+        </div>
+        <div class="form-group">
+            <label for="phosphorous">Phosphorous:</label>
+            <input type="text" id="phosphorous" name="phosphorous">
+        </div>
+        <input type="submit" value="Predict">
+    </form>
+</div>
+</body>
+</html>
+
+    {% if prediction %}
+    <h1>Recommended Fertilizer: {{ prediction }}</h1>
+    {% endif %}
+{% endblock %}
+
+{% block footer %}
+<script src="{{ url_for('static', filename='jss/chat.js')}}"></script>
+
+<script>
+document.getElementById('chat-form').addEventListener('submit', function(event) {
+event.preventDefault(); 
+let question = document.getElementById('question').value;
+
+
+});
+</script>
+{% endblock %}
